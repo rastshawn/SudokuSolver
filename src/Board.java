@@ -177,14 +177,16 @@ public class Board {
 		}
 		return true;
 	}
-	boolean check9x9(int row, int col, int val) {
+	boolean check3x3(int row, int col, int val) {
+		
+		
 		return true;
 	}
 	boolean check(int row, int col, int val) {
 		boolean checkRow = checkRow(row, col, val);
 		boolean checkColumn = checkColumn(row, col, val);
-		boolean check9x9 = check9x9(row, col, val);
-		return (checkRow && checkColumn && check9x9);
+		boolean check3x3 = check3x3(row, col, val);
+		return (checkRow && checkColumn && check3x3);
 	}
 	
 	private void setDomainsRow(int row) {
@@ -222,17 +224,51 @@ public class Board {
 			squares[unsolved.get(i)][col].limitDomain(values);
 		}
 	}
+	
+	void setDomains3x3(int row, int col){
+		ArrayList<Integer> values = getValuesList();
+		ArrayList<Square> unsolved = new ArrayList<Square>();
+		// find r, 
+		// find c
+		int r = (row/3) * 3;
+		int c = (col/3) * 3;
+		
+		for (int i = 0; i<3; i++){
+			for (int j = 0; j<3; j++){
+				Square currentSquare = squares[r+i][c+j];
+				
+				if (currentSquare.isSolved()){
+					Integer value = new Integer(currentSquare.domain.get(0));
+				
+					if (values.contains(value)){
+						values.remove(value);
+					}
+				} else {
+					unsolved.add(currentSquare);
+					
+				}		
+			}
+
+		}
+		
+		for (int i = 0; i<unsolved.size(); i++){
+			unsolved.get(i).limitDomain(values);
+		}
+	}
 	void setDomains() {
 		// for each square
 		for (int row = 0; row<9; row++){
 			for (int col = 0; col<9; col++){
 				// remove the values in its row
 				// remove the values from its col
-				// remove the values from its 9x9
+				// remove the values from its 3x3
 				setDomainsRow(row);
 				setDomainsCol(col);
+				setDomains3x3(row, col);
 			}
 		}
+		
+
 
 	}
 	

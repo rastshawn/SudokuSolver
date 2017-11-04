@@ -5,15 +5,21 @@ public class Main {
 		Board b = new Board("board.txt");
 		b.print();
 		System.out.println("--------------");
-		Board c;
-		do {
-			c = b;
-			c.setDomains();
-			c.print();
-			System.out.println("---------------");
-		} while (!c.toString().equals(b.toString()));
 		
-	
+		int i = 0;
+		String str = b.toString();
+		while(str.indexOf('-')!=-1){
+			b.setDomains();
+			b.print();
+			str = b.toString();
+			
+			
+			System.out.println("---------------");
+			i++;
+		}
+		
+		System.out.printf("Ran limiting algorithm %d times%n", i);
+		
 		
 		
 	}
