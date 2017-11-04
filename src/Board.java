@@ -6,7 +6,7 @@ import java.util.Scanner;
 public class Board {
 
 	class Square{
-		int[] domain = {1, 2, 3, 4, 5, 6, 7, 8, 9};
+		private ArrayList<Integer> domain = getValuesList();
 		
 		public Square(int i){
 			set(i);
@@ -16,34 +16,49 @@ public class Board {
 				// do nothing, domain already has all numbers
 			}
 			else {
-				domain = new int[] {i};
+				this.domain = new ArrayList<Integer>() {{
+					add(i);
+					}};
+				
 			}
 		}
 		
 		boolean isUndefined() {
-			return (domain.length == 9);
+			return (domain.size() == 9);
 		}
 		
 		boolean isSolved() {
-			return (domain.length == 1);
+			return (domain.size() == 1);
 		}
 		
 		int domainSize() {
-			return domain.length;
+			return domain.size();
 		}
 		
 		@Override
 		public String toString(){
 			if (isSolved()){
-				return "" + domain[0];
+				return "" + domain.get(0);
 			}
 			else {
 				return "-";
 			}
 		}
 		
-		public int[] domain() {
+		ArrayList<Integer> domain() {
 			return domain;
+		}
+		void limitDomain(ArrayList<Integer> possibleValues){
+			
+			ArrayList<Integer> newDomain = new ArrayList<Integer>();
+			for (int i = 0; i<possibleValues.size(); i++){
+				if (domain.contains(possibleValues.get(i))){
+					newDomain.add(possibleValues.get(i));
+				} 
+			}
+			
+			this.domain = newDomain;
+			
 		}
 	}
 	
@@ -94,6 +109,11 @@ public class Board {
 	 * Prints the board into the same format of the input file. 
 	 */
 	void print() {
+		System.out.print(this);
+	}
+	
+	@Override 
+	public String toString(){
 		String print = "";
 		for (int i = 0; i<9; i++){
 			for (int j = 0; j<9; j++){
@@ -101,19 +121,60 @@ public class Board {
 			}
 			print += "\n";
 		}
-		System.out.print(print);
+		return print;
 	}
-	
-	
 	// checking values //////////////////////////
+	
+	/**
+	 * Checks the row that a given square is in for validity. 
+	 * Returns false if the proposed value for the square is invalid. 
+	 * @param row
+	 * @param col
+	 * @param val
+	 * @return
+	 */
 	boolean checkRow(int row, int col, int val) {
-
+		ArrayList<Integer> values = getValuesList();
 		for (int i = 0; i<9; i++){
-			
+			if (squares[row][i].isSolved()){
+				int value = squares[row][i].domain.get(0);
+				if (values.contains(value)){
+					values.remove(value);
+				} else {
+					return false;
+				}
+			} else {
+				if (i == col){ // current item in loop is testing value
+					if (values.contains(val)){
+						values.remove(val);
+					} else {
+						return false;
+					}
+				}
+			}
 		}
 		return true;
 	}
 	boolean checkColumn(int row, int col, int val) {
+		ArrayList<Integer> values = getValuesList();
+		for (int i = 0; i<9; i++){
+			if (squares[i][col].isSolved()){
+				int value = squares[i][col].domain.get(0);
+				if (values.contains(value)){
+					values.remove(value);
+				} else {
+					return false;
+				}
+			} else {
+				if (i == row){ // current item in loop is testing value
+					if (values.contains(val)){
+						values.remove(val);
+					} else {
+						return false;
+					}
+				}
+			}
+		}
 		return true;
 	}
 	boolean check9x9(int row, int col, int val) {
@@ -124,6 +185,55 @@ public class Board {
 		boolean checkColumn = checkColumn(row, col, val);
 		boolean check9x9 = check9x9(row, col, val);
 		return (checkRow && checkColumn && check9x9);
+	}
+	
+	private void setDomainsRow(int row) {
+
+		ArrayList<Integer> values = getValuesList();
+		ArrayList<Integer> unsolved = new ArrayList<Integer>();
+		for (int i = 0; i<9; i++){
+			if (squares[row][i].isSolved()){
+				Integer value = new Integer(squares[row][i].domain.get(0));
+				if (values.contains(value)){
+					values.remove(value);
+				} 
+			} else {
+				unsolved.add(i);
+			}
+		}
+		for (int i = 0; i<unsolved.size(); i++){
+			squares[row][unsolved.get(i)].limitDomain(values);
+		}
+	}
+	private void setDomainsCol(int col) {
+		ArrayList<Integer> values = getValuesList();
+		ArrayList<Integer> unsolved = new ArrayList<Integer>();
+		for (int i = 0; i<9; i++){
+			if (squares[i][col].isSolved()){
+				Integer value = new Integer(squares[i][col].domain.get(0));
+				if (values.contains(value)){
+					values.remove(value);
+				} 
+			} else {
+				unsolved.add(i);
+			}
+		}
+		for (int i = 0; i<unsolved.size(); i++){
+			squares[unsolved.get(i)][col].limitDomain(values);
+		}
+	}
+	void setDomains() {
+		// for each square
+		for (int row = 0; row<9; row++){
+			for (int col = 0; col<9; col++){
+				// remove the values in its row
+				// remove the values from its col
+				// remove the values from its 9x9
+				setDomainsRow(row);
+				setDomainsCol(col);
+			}
+		}
+
 	}
 	
 	private ArrayList<Integer> getValuesList(){
