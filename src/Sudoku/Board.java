@@ -1,24 +1,61 @@
+package Sudoku;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.PriorityQueue;
 import java.util.Scanner;
 
-public class Board {
+import Sudoku.Board.Square;
 
-	class Square{
+
+public class Board {
+	class SquareComparator implements Comparator<Square> {
+
+		@Override
+		public int compare(Square o1, Square o2) {
+			if (o1.domainSize() < o2.domainSize()){
+				return -1;
+			} else if (o1.domainSize() > o2.domainSize()){
+				return 1;
+			}
+			return 0;
+		}
+		
+	}
+	public class Square{
+		int row, col;
 		private ArrayList<Integer> domain = getValuesList();
 		
-		public Square(int i){
+		public Square(int row, int col, int i){
+			this.row = row;
+			this.col = col;
 			set(i);
 		}
+		public Square(Square s){
+			ArrayList<Integer> d = new ArrayList<Integer>();
+			for (int i = 0; i<s.domainSize(); i++){
+				d.add(new Integer(s.domain().get(i)));
+			}
+			this.domain = d;
+			this.row = s.row;
+			this.col = s.col;
+		}
+		
 		void set(int i){
 			if (i == -1) {
 				// do nothing, domain already has all numbers
 			}
 			else {
-				this.domain = new ArrayList<Integer>() {{
-					add(i);
-					}};
+				if (this.domain.contains(new Integer(i))){
+					this.domain = new ArrayList<Integer>() {{
+						add(i);
+						}};
+				} else {
+					System.out.println("asdf");
+					this.domain = new ArrayList<Integer>();
+				}
+
 				
 			}
 		}
@@ -91,10 +128,10 @@ public class Board {
 				String line = in.nextLine();
 				for (int i = 0; i<line.length(); i++){
 					if (line.charAt(i) == '-') {
-						squares[row][i] = new Square(-1);
+						squares[row][i] = new Square(row, i, -1);
 					} else {
 						int num = Character.getNumericValue(line.charAt(i));
-						squares[row][i] = new Square(num);
+						squares[row][i] = new Square(row, i, num);
 					}
 				}
 				row++;
@@ -102,6 +139,15 @@ public class Board {
 			
 		} catch (FileNotFoundException e) {
 			e.printStackTrace();
+		}
+	}
+	
+	public Board(Board b){
+		this.squares = new Square[9][9];
+		for (int i = 0; i<9; i++) {
+			for (int j = 0; j<9; j++){
+				squares[i][j] = new Square(b.squares[i][j]);
+			}
 		}
 	}
 	
@@ -123,73 +169,8 @@ public class Board {
 		}
 		return print;
 	}
-	// checking values //////////////////////////
-	
-	/**
-	 * Checks the row that a given square is in for validity. 
-	 * Returns false if the proposed value for the square is invalid. 
-	 * @param row
-	 * @param col
-	 * @param val
-	 * @return
-	 */
-	boolean checkRow(int row, int col, int val) {
-		ArrayList<Integer> values = getValuesList();
-		for (int i = 0; i<9; i++){
-			if (squares[row][i].isSolved()){
-				int value = squares[row][i].domain.get(0);
-				if (values.contains(value)){
-					values.remove(value);
-				} else {
-					return false;
-				}
-			} else {
-				if (i == col){ // current item in loop is testing value
-					if (values.contains(val)){
-						values.remove(val);
-					} else {
-						return false;
-					}
-				}
-			}
-		}
-		return true;
-	}
-	boolean checkColumn(int row, int col, int val) {
-		ArrayList<Integer> values = getValuesList();
-		for (int i = 0; i<9; i++){
-			if (squares[i][col].isSolved()){
-				int value = squares[i][col].domain.get(0);
-				if (values.contains(value)){
-					values.remove(value);
-				} else {
-					return false;
-				}
-			} else {
-				if (i == row){ // current item in loop is testing value
-					if (values.contains(val)){
-						values.remove(val);
-					} else {
-						return false;
-					}
-				}
-			}
-		}
-		return true;
-	}
-	boolean check3x3(int row, int col, int val) {
-		
-		
-		return true;
-	}
-	boolean check(int row, int col, int val) {
-		boolean checkRow = checkRow(row, col, val);
-		boolean checkColumn = checkColumn(row, col, val);
-		boolean check3x3 = check3x3(row, col, val);
-		return (checkRow && checkColumn && check3x3);
-	}
-	
-	private void setDomainsRow(int row) {
+
+	private boolean setDomainsRow(int row) {
 
 		ArrayList<Integer> values = getValuesList();
 		ArrayList<Integer> unsolved = new ArrayList<Integer>();
@@ -198,7 +179,9 @@ public class Board {
 				Integer value = new Integer(squares[row][i].domain.get(0));
 				if (values.contains(value)){
 					values.remove(value);
-				} 
+				} else {
+					return false;
+				}
 			} else {
 				unsolved.add(i);
 			}
@@ -206,8 +189,9 @@ public class Board {
 		for (int i = 0; i<unsolved.size(); i++){
 			squares[row][unsolved.get(i)].limitDomain(values);
 		}
+		return true;
 	}
-	private void setDomainsCol(int col) {
+	private boolean setDomainsCol(int col) {
 		ArrayList<Integer> values = getValuesList();
 		ArrayList<Integer> unsolved = new ArrayList<Integer>();
 		for (int i = 0; i<9; i++){
@@ -215,7 +199,9 @@ public class Board {
 				Integer value = new Integer(squares[i][col].domain.get(0));
 				if (values.contains(value)){
 					values.remove(value);
-				} 
+				} else {
+					return false;
+				}
 			} else {
 				unsolved.add(i);
 			}
@@ -223,13 +209,13 @@ public class Board {
 		for (int i = 0; i<unsolved.size(); i++){
 			squares[unsolved.get(i)][col].limitDomain(values);
 		}
+		return true;
 	}
 	
-	void setDomains3x3(int row, int col){
+	private boolean setDomains3x3(int row, int col){
 		ArrayList<Integer> values = getValuesList();
 		ArrayList<Square> unsolved = new ArrayList<Square>();
-		// find r, 
-		// find c
+		
 		int r = (row/3) * 3;
 		int c = (col/3) * 3;
 		
@@ -242,34 +228,70 @@ public class Board {
 				
 					if (values.contains(value)){
 						values.remove(value);
+					} else {
+						return false;
 					}
 				} else {
 					unsolved.add(currentSquare);
-					
 				}		
 			}
-
+		
 		}
 		
 		for (int i = 0; i<unsolved.size(); i++){
 			unsolved.get(i).limitDomain(values);
 		}
+		return true;
 	}
-	void setDomains() {
+	PriorityQueue<Square> setDomains() {
 		// for each square
-		for (int row = 0; row<9; row++){
-			for (int col = 0; col<9; col++){
-				// remove the values in its row
-				// remove the values from its col
-				// remove the values from its 3x3
-				setDomainsRow(row);
-				setDomainsCol(col);
-				setDomains3x3(row, col);
+		String str = "";
+		int i = 0;
+		
+		SquareComparator sc = new SquareComparator();
+		PriorityQueue<Square> squareQueue;
+		while(true){
+			str = toString();
+			squareQueue = new PriorityQueue<Square> (10, sc);
+			for (int row = 0; row<9; row++){
+				for (int col = 0; col<9; col++){
+					// remove the values in its row
+					// remove the values from its col
+					// remove the values from its 3x3
+					boolean isValid = (
+							setDomainsRow(row) &&
+							setDomainsCol(col) &&
+							setDomains3x3(row, col)
+						);
+					
+					if (!isValid){
+						//System.out.println("INVALID, setDomains()");
+						return null;
+					}
+					
+					if (!squares[row][col].isSolved()){
+						squareQueue.add(squares[row][col]);
+					} else if (squares[row][col].domainSize() == 0){
+						// if any of the squares don't have any remaining domain
+						// then this chain is invalid. 
+						//System.out.println("INVALID, setDomains()");
+						return null;
+					}
+				}
 			}
+			i++;
+			if (toString().equals(str)) break;
 		}
 		
-
-
+		if (squareQueue.isEmpty()) {
+			// if solved
+			squareQueue.add(new Square(-1, -1, -1));
+		}
+		return squareQueue;
+	}
+	
+	public boolean isSolved() {
+		return (toString().indexOf('-') == -1);
 	}
 	
 	private ArrayList<Integer> getValuesList(){
